@@ -34,7 +34,9 @@ class MyBot: public OthelloPlayer
     private:
 		Move* bestMove;
 		int weights[8][8];
-		
+
+        int visitcount;
+
 };
 
 class MovePair
@@ -87,6 +89,8 @@ MyBot::MyBot( Turn turn )
 
 Move MyBot::play(const OthelloBoard& board )
 {
+    visitcount = 0;
+
     list<Move> moves = board.getValidMoves( turn );
     if(moves.size()==0)
         return Move::pass();
@@ -101,12 +105,17 @@ Move MyBot::play(const OthelloBoard& board )
     for(it=moves.begin(); it!=moves.end(); it++){
         b = board;
         b.makeMove(turn,*it);
+
+        //Only for perftesting
+        alphaBeta(other(turn), b, NEGLARGE, POSLARGE, PLY);
+
         int score = weights[it->x][it->y];
         MovePair *tempm = new MovePair(&(*it), score);
         pq.push(*tempm);
     }
     
-
+    cout<<"unordered : "<<visitcount<<" ";
+    visitcount = 0;
     while(!pq.empty()){
         Move* m = pq.top().m;
         pq.pop();
@@ -119,6 +128,8 @@ Move MyBot::play(const OthelloBoard& board )
             firstRun = false;
         }
     }
+    cout<<"ordered took: "<<visitcount<<endl;
+
     if(cm==0) cout<<"cm is null!!"<<endl<<moves.size()<<endl;
 	return *cm;
 
@@ -142,6 +153,7 @@ extern "C" {
 
 int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply)
 {
+    visitcount +=1;
 	if(ply==0) {
 		return evaluationFunction(turn, board);
 	}
