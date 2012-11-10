@@ -30,10 +30,14 @@ class MyBot: public OthelloPlayer
 	    int finalValue (Turn turn, const OthelloBoard& board);
 	    int countDifference(Turn turn, const OthelloBoard& board);
        	int evaluationFunction(Turn turn, const OthelloBoard& board);
+        void brutemeasure(Turn turn, const OthelloBoard& board, int ply);
     private:
 		Move* bestMove;
 		int weights[8][8];
-		
+
+        //Only for measuring performance
+        int brutecount;
+        int actcount;
 };
 
 MyBot::MyBot( Turn turn )
@@ -58,7 +62,11 @@ MyBot::MyBot( Turn turn )
 }
 
 Move MyBot::play(const OthelloBoard& board )
-{
+{   
+    brutecount = 0;
+    actcount = 0;
+
+
     list<Move> moves = board.getValidMoves( turn );
     if(moves.size()==0)
         return Move::pass();
@@ -77,7 +85,9 @@ Move MyBot::play(const OthelloBoard& board )
             firstRun = false;
         }
     }
+    brutemeasure(turn, board, PLY+1);
     if(cm==0) cout<<"cm is null!!"<<endl<<moves.size()<<endl;
+    cout<<"brute force would take: "<<brutecount<<" AlphaBeta took "<<actcount<<endl;
 	return *cm;
 
 }
@@ -96,10 +106,22 @@ extern "C" {
     }
 }
 
-
+void MyBot::brutemeasure(Turn turn, const OthelloBoard& board, int ply){
+    brutecount +=1;
+    if(ply==0)
+        return;
+    list<Move> moves = board.getValidMoves(turn);
+    list<Move>::iterator it;
+    for(it = moves.begin(); it != moves.end(); it++){
+        OthelloBoard b = board;
+        b.makeMove(turn, *it);
+        brutemeasure(other(turn), b, ply-1);
+    }
+}
 
 int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply, int maxOrMin)
-{
+{   
+    actcount += 1;
 	if(ply==0) {
 		return evaluationFunction(turn, board);
 	}
