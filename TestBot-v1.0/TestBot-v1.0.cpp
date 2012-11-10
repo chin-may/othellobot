@@ -26,7 +26,7 @@ class MyBot: public OthelloPlayer
          */
         virtual Move play(const OthelloBoard& board );
 	    
-	    int alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply, int maxOrMin);	
+	    int alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply);	
 	    int finalValue (Turn turn, const OthelloBoard& board);
 	    int countDifference(Turn turn, const OthelloBoard& board);
        	int evaluationFunction(Turn turn, const OthelloBoard& board);
@@ -71,7 +71,7 @@ Move MyBot::play(const OthelloBoard& board )
     for(it=moves.begin(); it!=moves.end(); it++){
         b = board;
         b.makeMove(turn,*it);
-        val = alphaBeta(other(turn), b, NEGLARGE, val, PLY, -1);
+        val = alphaBeta(other(turn), b, NEGLARGE, val, PLY);
         if(val<currbest || firstRun){
             currbest = val;
             cm = &(*it);
@@ -99,7 +99,7 @@ extern "C" {
 
 
 
-int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply, int maxOrMin)
+int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply)
 {
 	if(ply==0) {
 		return evaluationFunction(turn, board);
@@ -111,7 +111,7 @@ int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, 
 		    
 		    list<Move> oppMoves = board.getValidMoves(other(turn));
 			if(oppMoves.size()!= 0){
-			    return (- (alphaBeta (other(turn), board, -beta, -alpha, ply-1, -maxOrMin)));
+			    return (- (alphaBeta (other(turn), board, -beta, -alpha, ply-1)));
 			}
 			else return finalValue(turn, board);
 		}
@@ -121,7 +121,7 @@ int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, 
 				OthelloBoard board2 = board;
 				board2.makeMove(turn, *it);
 				//val is alpha in the case of max and beta in the case of min
-				int val = - alphaBeta(other(turn), board2, - beta, -alpha, (ply-1), -maxOrMin);
+				int val = - alphaBeta(other(turn), board2, - beta, -alpha, (ply-1));
 				if(val >= beta)
 				     return val;
 				if(val >= alpha) {
@@ -130,7 +130,6 @@ int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, 
 					    bestMove = &(*it);
 				}
 				
-				//delete board2;	
 			}
 			return alpha;
 		}	
@@ -158,7 +157,6 @@ int MyBot::evaluationFunction(Turn turn, const OthelloBoard& board){
 
 int MyBot::finalValue (Turn turn, const OthelloBoard& board){
 	int diff = countDifference(turn, board);
-	//printf("DIFF : %d\n",diff);
 	if(diff > 0) return POSLARGE;
 	else if(diff == 0) return 0;
 	else return NEGLARGE;
@@ -169,12 +167,9 @@ int MyBot::countDifference(Turn turn, const OthelloBoard& board){
 	int redCount = board.getRedCount();
 	int blackCount = board.getBlackCount();
 	if(turn == RED){
-	    //printf("Count : %d\n",redCount - blackCount);
-	        return redCount - blackCount;
+		return redCount - blackCount;
 	}
 	else {
-	    //printf("Count : %d\n",redCount - blackCount);
-	    
 	    return blackCount - redCount;
 	}	
 }
