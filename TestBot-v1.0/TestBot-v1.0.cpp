@@ -5,7 +5,7 @@
 #include <iostream>
 #define NEGLARGE -1000
 #define POSLARGE 1000
-#define PLY 4
+#define PLY 5
 
 using namespace std;
 using namespace Desdemona;
@@ -67,10 +67,11 @@ Move MyBot::play(const OthelloBoard& board )
     int currbest = POSLARGE;
     Move *cm = 0;
     bool firstRun = true;
+    int val;
     for(it=moves.begin(); it!=moves.end(); it++){
         b = board;
         b.makeMove(turn,*it);
-        int val = alphaBeta(other(turn), b, NEGLARGE, POSLARGE, PLY, -1);
+        val = alphaBeta(other(turn), b, NEGLARGE, val, PLY, -1);
         if(val<currbest || firstRun){
             currbest = val;
             cm = &(*it);
