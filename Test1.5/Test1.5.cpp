@@ -244,16 +244,16 @@ int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, 
 int MyBot::actEval(Turn turn, const OthelloBoard& board){
     //return evaluationFunction(turn, board);
     //cout<<"eval "<<evaluationFunction(turn, board)<<" pot m "<<potentialMobility(turn, board)<<" current m "<<currentMobility(turn, board)<<endl;
-    /*
 	int currmob = currentMobility(turn, board);
     int potmob = potentialMobility(turn, board);
 
     Turn opp = other(turn);
     int oppcurrmob = currentMobility(opp, board);
     int opppotmob = potentialMobility(opp, board);
-    */
+
+    //cout<<" currmob "<<currmob<<" potmob "<<potmob<<" oppcurrmob "<<oppcurrmob<<" opppotmob "<<opppotmob<<endl;
     // TODO : Check factors for better results
-    return 3*evaluationFunction(turn, board) + 2*getStableDiscsCount(turn,board); ;
+    return 3*evaluationFunction(turn, board) + 300*getStableDiscsCount(turn,board) + 100*(currmob - oppcurrmob) + 50*(potmob - opppotmob);
     // + 2*( currmob - oppcurrmob ) +  (potmob - opppotmob);
     //return 3*evaluationFunction(turn, board) + 2*currentMobility(turn, board) + potentialMobility(turn, board);
 
@@ -314,7 +314,8 @@ int MyBot::countDifference(Turn turn, const OthelloBoard& board){
 }
 
 int MyBot::getStableDiscsCount(Turn turn, const OthelloBoard& board){
-    return getStableDiscsFromCorner(board, turn, 0, 0)
+    int x = 
+     getStableDiscsFromCorner(board, turn, 0, 0)
         + getStableDiscsFromCorner(board, turn, 0, 7)
         + getStableDiscsFromCorner(board, turn, 7, 0)
         + getStableDiscsFromCorner(board, turn, 7, 7)
@@ -322,6 +323,7 @@ int MyBot::getStableDiscsCount(Turn turn, const OthelloBoard& board){
         + getStableDiscsFromEdge(board, turn, 7, true)
         + getStableDiscsFromEdge(board, turn, 0, false)
         + getStableDiscsFromEdge(board, turn, 7, false);
+    return x;
 }
 
 int MyBot::getStableDiscsFromCorner(const OthelloBoard& board, Turn color, int cornerRowIndex, int cornerColumnIndex) {
