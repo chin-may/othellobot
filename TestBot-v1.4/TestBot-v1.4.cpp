@@ -261,7 +261,7 @@ int MyBot::potentialMobility(Turn turn,const OthelloBoard& board) {
             else if(i==7 && j ==0){
                 if(board.get(i-1,j+1) == opponent 
                     || board.get(i-1,0) == opponent 
-                        || board.get(0,j+1) == opponent){
+                        || board.get(i,j+1) == opponent){
                     potential++;        
                 }
             }
