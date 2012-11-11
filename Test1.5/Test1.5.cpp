@@ -5,7 +5,7 @@
 #include <iostream>
 #define NEGLARGE -1000
 #define POSLARGE 1000
-#define PLY 5
+#define PLY 4 //Need to check how this fairs for higher ply
 
 using namespace std;
 using namespace Desdemona;
@@ -36,7 +36,11 @@ class MyBot: public OthelloPlayer
         int actEval(Turn turn, const OthelloBoard& board);
     private:
 		int weights[8][8];
-		
+		bool isEdgeFull(const OthelloBoard& board, int edgeCoordinate, bool isHorizontal);
+		int getStableDiscsFromEdge(const OthelloBoard& board, Turn color, int edgeCoordinate, bool isHorizontal);
+		int getStableDiscsFromCorner(const OthelloBoard& board, Turn color, int cornerRowIndex, int cornerColumnIndex);
+		int getStableDiscsCount(Turn turn, const OthelloBoard& board);
+    	
 };
 
 MyBot::MyBot( Turn turn )
@@ -93,6 +97,7 @@ int MyBot::currentMobility(Turn turn,const OthelloBoard& board){
     /**
      * Current Mobility is the number of legal moves.
      */
+     //TODO : Shouldn't this actually be the number of flips?
     int current = 0;
     list<Move> moves = board.getValidMoves(turn);
 	current = moves.size();
@@ -247,7 +252,9 @@ int MyBot::actEval(Turn turn, const OthelloBoard& board){
     int oppcurrmob = currentMobility(opp, board);
     int opppotmob = potentialMobility(opp, board);
     */
-    return evaluationFunction(turn, board);// + 2*( currmob - oppcurrmob ) +  (potmob - opppotmob);
+    // TODO : Check factors for better results
+    return 3*evaluationFunction(turn, board) + 2*getStableDiscsCount(turn,board); ;
+    // + 2*( currmob - oppcurrmob ) +  (potmob - opppotmob);
     //return 3*evaluationFunction(turn, board) + 2*currentMobility(turn, board) + potentialMobility(turn, board);
 
 }
@@ -306,4 +313,106 @@ int MyBot::countDifference(Turn turn, const OthelloBoard& board){
 	}	
 }
 
+int MyBot::getStableDiscsCount(Turn turn, const OthelloBoard& board){
+    return getStableDiscsFromCorner(board, turn, 0, 0)
+        + getStableDiscsFromCorner(board, turn, 0, 7)
+        + getStableDiscsFromCorner(board, turn, 7, 0)
+        + getStableDiscsFromCorner(board, turn, 7, 7)
+        + getStableDiscsFromEdge(board, turn, 0, true)
+        + getStableDiscsFromEdge(board, turn, 7, true)
+        + getStableDiscsFromEdge(board, turn, 0, false)
+        + getStableDiscsFromEdge(board, turn, 7, false);
+}
 
+int MyBot::getStableDiscsFromCorner(const OthelloBoard& board, Turn color, int cornerRowIndex, int cornerColumnIndex) {
+    int result = 0;
+
+    int rowIndexChange = (cornerRowIndex == 0) ? 1 : -1;
+    int columnIndexChange = (cornerColumnIndex == 0) ? 1 : -1;
+
+    int rowIndex = cornerRowIndex;
+    int rowIndexLimit = (cornerRowIndex == 0) ? 8 : -1;
+    int columnIndexLimit = (cornerColumnIndex == 0) ? 8 : -1;
+    for (rowIndex = cornerRowIndex; rowIndex != rowIndexLimit; rowIndex += rowIndexChange)
+    {
+        int columnIndex;
+        for (columnIndex = cornerColumnIndex; columnIndex != columnIndexLimit; columnIndex += columnIndexChange){
+            if (board.get(rowIndex, columnIndex) == color){
+                result++;
+            }
+            else{
+                break;
+            }
+        }
+
+        if ((columnIndexChange > 0 && columnIndex < 8) || (columnIndexChange < 0 && columnIndex > 0)){
+            columnIndexLimit = columnIndex - columnIndexChange;
+
+            if (columnIndexChange > 0 && columnIndexLimit == 0)
+            {
+                columnIndexLimit++;
+            }
+            else if (columnIndexChange < 0 && columnIndexLimit == 7)
+            {
+                columnIndexLimit--;
+            }
+
+            if ((columnIndexChange > 0 && columnIndexLimit < 0)
+                || (columnIndexChange < 0 && columnIndexLimit > 7))
+            {
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+int MyBot::getStableDiscsFromEdge(const OthelloBoard& board, Turn color, int edgeCoordinate, bool isHorizontal)
+{
+    int result = 0;
+
+    if (isEdgeFull(board, edgeCoordinate, isHorizontal))
+    {
+        bool oppositeColorDiscsPassed = false;
+        for (int otherCoordinate = 0; otherCoordinate < 8; otherCoordinate++)
+        {                
+            Turn fieldColor = (isHorizontal) ? board.get(edgeCoordinate, otherCoordinate) : board.get(otherCoordinate, edgeCoordinate);
+            if (fieldColor != color)
+            {
+                oppositeColorDiscsPassed = true;
+            }
+            else if (oppositeColorDiscsPassed)
+            {
+                int consecutiveDiscsCount = 0;
+                while ((otherCoordinate < 8) && (fieldColor == color))
+                {
+                    consecutiveDiscsCount++;
+
+                    otherCoordinate++;
+                    if (otherCoordinate < 7)
+                    {
+                        fieldColor = (isHorizontal) ? board.get(edgeCoordinate, otherCoordinate) : board.get(otherCoordinate, edgeCoordinate);
+                    }
+                }
+                if (otherCoordinate != 8)
+                {
+                    result += consecutiveDiscsCount;
+                    oppositeColorDiscsPassed = true;
+                }                                             
+            }
+        }
+    }
+
+    return result;
+}
+
+bool MyBot::isEdgeFull(const OthelloBoard& board, int edgeCoordinate, bool isHorizontal){
+    for (int otherCoordinate = 0; otherCoordinate < 8; otherCoordinate++){
+        if ((isHorizontal && (board.get(edgeCoordinate, otherCoordinate) == EMPTY))
+            || (!isHorizontal && (board.get(otherCoordinate, edgeCoordinate) == EMPTY))){
+            return false;
+        }
+    }
+    return true;
+}
