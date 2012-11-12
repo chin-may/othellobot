@@ -52,7 +52,7 @@ class MyBot: public OthelloPlayer
          */
         virtual Move play(const OthelloBoard& board );
 	    
-	    int alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply);	
+	    int alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply, Move* killer);
 	    int finalValue (Turn turn, const OthelloBoard& board);
 	    int countDifference(Turn turn, const OthelloBoard& board);
        	int evaluationFunction(Turn turn, const OthelloBoard& board);
@@ -102,7 +102,7 @@ MyBot::MyBot( Turn turn )
 
 Move MyBot::play(const OthelloBoard& board )
 {
-    cout << moveNo<<endl;
+    //cout << moveNo<<endl;
     list<Move> moves = board.getValidMoves( turn );
     if(moves.size()==0)
         return Move::pass();
@@ -113,14 +113,13 @@ Move MyBot::play(const OthelloBoard& board )
     bool firstRun = true;
     int val = POSLARGE;
     priority_queue<MovePair> pq;
-    if(!greedy && moveNo > 35){ 
+    if(!greedy && moveNo > 35){
         plyChoice = 5;
         //cout<<"switching to full d"<<endl;
     }
     if(!greedy && moveNo > 50){ 
         plyChoice = 9;
         greedy = true;
-        //TODO: Should we really be becoming fully greedy?
     }
 
     for(it=moves.begin(); it!=moves.end(); it++){
@@ -131,13 +130,15 @@ Move MyBot::play(const OthelloBoard& board )
     	delete currmp;
     }
 
+    Move *killer2 = NULL;
     while(!pq.empty()){
         b = board;
         MovePair cpair = pq.top();
         pq.pop();
         b.makeMove(turn,*(cpair.m));
-        val = alphaBeta(other(turn), b, NEGLARGE, val, plyChoice);
+        val = alphaBeta(other(turn), b, NEGLARGE, val, plyChoice, killer2);
         if(val<currbest || firstRun){
+        	killer2 = cpair.m;
             currbest = val;
             cm = cpair.m;
             firstRun = false;
@@ -276,7 +277,7 @@ extern "C" {
 
 
 
-int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply)
+int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, int ply, Move *killer)
 {
 	moveNo++;
 	if(ply==0) {
@@ -291,7 +292,7 @@ int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, 
 		    list<Move> oppMoves = board.getValidMoves(other(turn));
 			if(oppMoves.size()!= 0){
 			    moveNo--;
-				return (- (alphaBeta (other(turn), board, -beta, -alpha, ply-1)));
+				return (- (alphaBeta (other(turn), board, -beta, -alpha, ply-1, NULL)));
 			}
 			else{
 				moveNo--;
@@ -300,17 +301,34 @@ int MyBot::alphaBeta(Turn turn, const OthelloBoard& board, int alpha, int beta, 
 		}
 		else {
 			list<Move>::iterator it = moves.begin();
-			for(; it != moves.end(); it++){
+
+			if(killer != 0 && board.validateMove(turn, *killer)){
+				while(!((it->x == killer->x) && (it->y == killer->y))){
+					it++;
+				}
+				int xtmp, ytmp;
+				xtmp = it->x;
+				ytmp = it->y;
+				it->x = moves.begin()->x;
+				it->y = moves.begin()->y;
+				moves.begin()->x = xtmp;
+				moves.begin()->y = ytmp;
+
+			}
+			Move *killer2 = NULL;
+
+			for(it=moves.begin(); it != moves.end(); it++){
 				OthelloBoard board2 = board;
 				board2.makeMove(turn, *it);
 				//val is alpha in the case of max and beta in the case of min
-				int val = - alphaBeta(other(turn), board2, - beta, -alpha, (ply-1));
+				int val = - alphaBeta(other(turn), board2, - beta, -alpha, (ply-1), killer2 );
 				if(val >= beta){
 				    moveNo--;
 					return val;
 				}
 				if(val >= alpha) {
 				    alpha = val;
+				    killer2 = &(*it);
 				}
 				
 			}
